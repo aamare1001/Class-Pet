@@ -7,7 +7,7 @@ client.on('ready', () => {
     console.log("Connected");
 });
 
-client.on('message', message =>
+client.on('message', async (message) =>
 {
     if(!message.content.startsWith(config.prefix) || message.author.bot) return;
 
@@ -26,11 +26,7 @@ client.on('message', message =>
         //const chat = new Discord.DMChannel(client, message.author);
         console.log("started chat with " + name);
         message.author.send("hi");
-        // const filter = m => m.content.includes('discord');
-        // const collector = chat.createMessageCollector(filter, { time: 15000 });
-        // collector.on('collect', m => console.log(`Collected ${m.content}`));
-        // chat.send("hi there!");
-        // collector.on('end', collected => console.log(`Collected ${collected.size} items`))
+
     }
     if(command === "up")
     {
@@ -38,6 +34,20 @@ client.on('message', message =>
         time = Math.floor(time / 60);
         message.channel.send("I've been up for: " + time +" minutes");
         console.log("I've been up for: %d minutes", time);
+    }
+    if(command === "addtest")
+    {
+        const filter = m => m.author.id === message.author.id;
+        const collector = await message.channel.awaitMessages(filter, {max: 1, time: 10000, errors:['time']});
+        console.log(collector.get(collector.firstKey()).content);
+        var testName = collector.get(collector.firstKey()).content;
+        message.channel.send("Test name is " + testName);
+        var fs = require('fs');
+        fs.writeFile((testName + ".txt"), (testName + ' Grades:'), function(err)
+            {
+                if (err) throw err;
+                console.log(testName + " created!");
+            });
     }
 })
 
