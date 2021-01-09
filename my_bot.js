@@ -249,14 +249,13 @@ client.on('message',(message) =>
             {
                 message.channel.send(test.name + " is not in the " + line[2] + " class.");
             }
-            else if(grade < 0)
+            else if(grade < test.min)
             {
-                message.channel.send("Grades can not be less than 0.");
+                message.channel.send("Can not remove a score lower than the min");
             }
-            else if(grade > 120)
+            else if(grade > test.max)
             {
-                message.channel.send("If your grade is over 120, your score will not be entered.\n" +
-                "Please try again with a 120\n```this is to keep the average realistic```");
+                message.channel.send("Can not remove a score higher than the max\n```this is to keep the average realistic```");
             }
             else
             {
