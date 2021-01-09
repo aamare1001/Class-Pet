@@ -1,6 +1,8 @@
 const Discord = require('discord.js');
 const client = new Discord.Client();
 const config = require("./config.json");
+const Enmap = require('enmap');
+client.saveData = new Enmap({name: "Classes"});
 
 client.on('ready', () => {
     console.log("Connected");
@@ -11,8 +13,9 @@ client.on('message',(message) =>
     if(!message.content.startsWith(config.prefix) || message.author.bot) return;
     let line = message.content.substring(config.prefix.length).split(" ");
     const command = line[0].toLowerCase();
-    var name = message.member.displayName;
     const guild = message.guild;
+    if(message.channel.guild_id != null)
+        var name = message.member.displayName;
 
     if(command == "ping")
     {
@@ -34,9 +37,22 @@ client.on('message',(message) =>
         message.channel.send("I've been up for: " + time +" minutes");
         console.log("I've been up for: %d minutes", time);
     }
+    if(command == "check")
+    {
+        message.channel.send("Current classes: " + client.saveData.count);
+    }
+    if(command == "clear")
+    {
+        client.saveData.clear();
+        message.channel.send("Current classes: " + client.saveData.count);
+    }
+
+    // Needs to check permission to see if class mod
+    // !addtest TestName ClassName
     if(command == "addtest")
     {
-        // const filter = m => m.author.id == message.author.id;
+        {
+            // const filter = m => m.author.id == message.author.id;
         // const collector = await message.channel.awaitMessages(filter, {max: 1, time: 10000, errors:['time']});
         // console.log(collector.get(collector.firstKey()).content);
         // var testName = collector.get(collector.firstKey()).content;
@@ -48,18 +64,62 @@ client.on('message',(message) =>
         //         console.log(testName + " created!");
         //     });
     }
-    if(command == "addgrade")
+        client.saveData.set(line[1], new Object(line[1], line[2]));
+        // if(!client.saveData.has(line[2]))
+        // {
+        //     message.channel.send("Class Not Found");
+        // }
+        // else
+        // {
+        //     let section = client.saveData.get(line[2]);
+        //     console.log("Section get!!");
+        //     message.channel.send(section.printName() + "adding now");
+        //     section.addTest(new Test(line[1]));
+        //     client.saveData.set(line[2], section);
+        // }
+    }
+    // !listtests ClassName
+    if(command == "listtests")
     {
-        message.author.send("Which test?");
-        // List Tests
-        var author = message.author.username;
-        var gradechannel = message.guild.channels.create((author + " GRADE"), {position: 1})
-        .then(console.log)
-        .catch(console.error);
-
-        gradechannel.delete()
+        message.channel.send("# of tests: " + client.saveData.count);
     }
 
+    //will check the testname and class name to make sure it is a valid test, then dm and ask for grade
+    // !addgrade TestName ClassName
+    if(command == "addgrade")
+    {
+
+        if(!client.saveData.has(line[1]))
+        {
+            message.channel.send("Test Not Found");
+        }
+        else
+        {
+            var test = client.saveData.get(line[1]);
+            test.sum += 65;
+            test.numGrades++;
+            client.saveData.update(line[1], test);
+        }
+
+        //gradechannel.delete()
+    }
+
+    //Will need Min, Max, Average, Name, Date, and Section
+    if(command == "testinfo")
+    {
+        if(!client.saveData.has(line[1]))
+        {
+            message.channel.send("Test Not Found");
+        }
+        else
+        {
+            var test = client.saveData.get(line[1]);
+            console.log(test);
+            message.channel.send(test.sum + " > " + test.numGrades);
+        }
+    }
+
+    // !join ClassName
     if(command == "join")
     {
         let section = guild.roles.cache.find(role => role.name == line[1]);
@@ -74,7 +134,7 @@ client.on('message',(message) =>
         }
         else {
             //console.log("looking for nothing: " + guild.roles.cache.find(role => role.name == "newrole"));
-            if(message.member.roles.highest.comparePositionTo("795765460049854514") < 0 && section.comparePositionTo("795765460049854514") >= 0)
+            if(message.member.roles.highest.comparePositionTo(config.moderator) < 0 && section.comparePositionTo(config.moderator) >= 0)
             {
                 message.channel.send("```Nice attempt to get power hahaha. you tried```");
             }
@@ -105,61 +165,12 @@ client.on('message',(message) =>
 
 client.login(config.token);
 
-class Test
+function Object(name, section)
 {
-    #name;
-    #sum = 0;
-    #numGrades = 0;
-    constructor(name)
-    {
-        this.sum = 0;
-        this.numGrades = 0;
-    }
-
-    add(grade)
-    {
-        if(grade < 0)
-        {
-            message.channel.send("Impossible Grade")
-        }
-        if(grade > 100)
-        {
-            mesage.channel.send("Grade added. Was there Extra credit on this test?")
-        }
-        this.sum += grade;
-        this.numGrades++;
-    }
-
-    remove(grade)
-    {
-        this.sum -= grade;
-        this.numGrades--;
-    }
-
-    average()
-    {
-        messgae.channel.send("The average of " + " name is currently: " +(this.sum/this.numGrades));
-    }
-}
-
-class Section
-{
-    #name;
-    tests = [];
-    constructor(name)
-    {
-        this.name = name;
-    }
-    addTest(test)
-    {
-        this.tests.push(test);
-    }
-    removeTest(testName)
-    {
-        //remove test by name
-    }
-    getTest(test)
-    {
-        return tests[test];
-    }
+    this.name = name;
+    this.section = section;
+    this.sum = 0;
+    this.numGrades = 0;
+    this.max = -1;
+    this.min = -1;
 }
