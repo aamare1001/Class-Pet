@@ -15,9 +15,28 @@ client.on('message',(message) =>
     let line = message.content.substring(config.prefix.length).split(" ");
     const command = line[0].toLowerCase();
     const guild = message.guild;
+    const prefix = config.prefix;
     if(message.channel.guild_id != null)
         var name = message.member.displayName;
 
+    if(command == "help")
+    {
+        var string = "```Available Commands\n";
+        string += "====================\n"
+        string += prefix + "listClasses - Lists Classes Available to join\n";
+        string += prefix + "join [ClassName] - Joins a class\n";
+        string += prefix + "leave [ClassName] - Leaves a class\n";
+        string += prefix + "addTest [TestName] [ClassName] - Adds Test  --Requires Class Mod Role\n";
+        string += prefix + "removeTest [TestName] [ClassName] - Removes Test  --Requires Class Mod Role\n";
+        string += prefix + "listTests [ClassName] - Lists Tests\n";
+        string += prefix + "testInfo [TestName] [ClassName] - Provides test info, includes date, reported average, Max, and Min\n";
+        string += prefix + "addGrade [TestName] [ClassName] [Grade] - Adds grade to test for the reported average. Recommended to DM this command to the bot for privacy. \n**Please Check Grades before hitting enter!*** \n";
+        string += prefix + "removeGrade [TestName] [ClassName] [Grade] - Removes your grade from test for the reported average. Recommended to DM this command to the bot for privacy\n";
+        string += prefix + "updateDate[TestName] [ClassName] [Date(MM/DD)] - Updates Date for a test  --Requires Class Mod Role\n";
+        string += prefix + "ping - pong!\n";
+        string += prefix + "up - Shows UpTime of the class pet\n";
+        message.channel.send(string + "```");
+    }
     if(command == "ping")
     {
         message.channel.send("pong! " + name);
@@ -42,6 +61,7 @@ client.on('message',(message) =>
     {
         message.channel.send("Current classes: " + client.saveData.count);
     }
+    //This command deletes all tests.
     if(command == "clear")
     {
         if(message.member.roles.highest.comparePositionTo(config.SoloRank) < 0)
@@ -53,6 +73,10 @@ client.on('message',(message) =>
             client.saveData.clear();
             message.channel.send("Current classes: " + client.saveData.count);
         }
+    }
+    if(command == "listclasses")
+    {
+        message.channel.send(classes.toString());
     }
     // Needs to check permission to see if class mod
     // Needs to check if class name is real
@@ -81,6 +105,38 @@ client.on('message',(message) =>
             {
                 client.saveData.set(line[1], new Object(line[1], line[2]));
                 message.channel.send("Test " + line[1] + " successfully added to the " + line[2] + " class!");
+            }
+        }
+    }
+
+    //!adddate testName ClassName date(MM/DD)
+    if(command == "updatedate")
+    {
+        if(message.member.roles.highest.comparePositionTo(config.classMod) < 0)
+        {
+            message.channel.send("```You are not a Class Moderator```");
+        }
+        else if(line.length != 4)
+        {
+            message.channel.send("Incorrect Syntax\n```!addDate TestName ClassName date(MM/DD)```");
+        }
+        else if(!classes.includes(line[2]))
+        {
+            message.channel.send(line[2] + " is not a valid class!");
+        }
+        else
+        {
+            var test = client.saveData.get(line[1]);
+            var date = line[3].split("/");
+            if(test.section != line[2])
+            {
+                message.channel.send(test.name + " is not in the " + line[2] + " class.");
+            }
+            else
+            {
+                test.date = new Date(2021, parseInt(date[0]) - 1, parseInt(date[1]));
+                client.saveData.update(line[1], test);
+                message.channel.send("Good Luck on " + test.date.toDateString() + "!");
             }
         }
     }
@@ -143,22 +199,75 @@ client.on('message',(message) =>
         else
         {
             var test = client.saveData.get(line[1]);
+            var grade = parseInt(line[3]);
             if(test.section != line[2])
             {
                 message.channel.send(test.name + " is not in the " + line[2] + " class.");
             }
+            else if(grade < 0)
+            {
+                message.channel.send("Grades can not be less than 0.");
+            }
+            else if(grade > 120)
+            {
+                message.channel.send("If your grade is over 120, your score will not be entered.\n" +
+                "Please try again with a 120\n```this is to keep the average realistic```");
+            }
             else
             {
-                test.sum += parseInt(line[3]);
+                test.sum += grade;
                 test.numGrades++;
-                if(test.max < parseInt(line[3]))
-                    test.max = parseInt(line[3]);
-                if(test.min > parseInt(line[3]))
-                    test.min = parseInt(line[3]);
+                if(test.max < grade)
+                    test.max = grade;
+                if(test.min > grade)
+                    test.min = grade;
                 client.saveData.update(line[1], test);
+                message.channel.send("Grade successfully added!");
             }
         }
     }
+
+    if(command == "removegrade")
+    {
+        if(line.length != 4)
+        {
+            message.channel.send("Incorrect Syntax\n```!addgrade TestName ClassName```");
+        }
+        else if(!client.saveData.has(line[1]))
+        {
+            message.channel.send("Test Not Found");
+        }
+        else if(!classes.includes(line[2]))
+        {
+            message.channel.send(line[2] + " is not a valid class!");
+        }
+        else
+        {
+            var test = client.saveData.get(line[1]);
+            var grade = parseInt(line[3]);
+            if(test.section != line[2])
+            {
+                message.channel.send(test.name + " is not in the " + line[2] + " class.");
+            }
+            else if(grade < 0)
+            {
+                message.channel.send("Grades can not be less than 0.");
+            }
+            else if(grade > 120)
+            {
+                message.channel.send("If your grade is over 120, your score will not be entered.\n" +
+                "Please try again with a 120\n```this is to keep the average realistic```");
+            }
+            else
+            {
+                test.sum -= grade;
+                test.numGrades--;
+                client.saveData.update(line[1], test);
+                message.channel.send("Grade successfully added!");
+            }
+        }
+    }
+
 
     //!removetest testname classname
     if(command == "removetest")
@@ -219,21 +328,20 @@ client.on('message',(message) =>
             if(test.section == line[2])
             {
                 console.log(test);
-                message.channel.send(test.sum + " > " + test.numGrades);
                 //testName
                 string += test.name + "\n";
-                //Test Date
-                //string += test.date + "\n";
                 //test Section
-                string += test.section + "\n";
+                string += "Class: " + test.section + "\n";
+                //Test Date
+                string += "Test Date: " + test.date.toDateString() + "\n";
                 //grades inputted
                 string += "Number of Grades inputted: " +  test.numGrades + "\n";
                 //test average
-                string += "Test Average: " + (test.sum / test.numGrades) + "\n";
+                string += "Test Average: " + ((test.numGrades == 0) ? "N/A": (test.sum / test.numGrades)) + "\n";
                 //test max
-                string += "Test Max: " + test.max + "\n";
+                string += "Test Max: " + ((test.max == -1) ? "N/A" : test.max) + "\n";
                 //test min
-                string += "Test Min: " + test.min + "```";
+                string += "Test Min: " + ((test.min == 1000) ? "N/A" : test.min) + "```";
                 message.channel.send(string);
             }
             else
@@ -297,4 +405,5 @@ function Object(name, section)
     this.numGrades = 0;
     this.max = -1;
     this.min = 1000;
+    this.date = new Date(1999, 0 ,1);
 }
