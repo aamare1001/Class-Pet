@@ -1,0 +1,7 @@
+{
+  "token": "TOKENHERE",
+  "prefix": "!",
+  "moderator": "MODERATOR ROLE ID",
+  "classMod": "CLASS MOD ROLE ID",
+  "SoloRank": "OWNER ROLE ID"
+}
