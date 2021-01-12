@@ -39,7 +39,7 @@ client.on('message',(message) =>
     }
     if(command == "ping")
     {
-        message.channel.send("pong! " + name);
+        message.channel.send("pong! ");
         console.log("ponged in " + message.channel.name);
     }
 
@@ -54,7 +54,10 @@ client.on('message',(message) =>
     {
         var time = client.uptime / 1000;
         time = Math.floor(time / 60);
-        message.channel.send("I've been up for: " + time +" minutes");
+        if(time < 60)
+            message.channel.send("I've been up for: " + time +" minutes.");
+        else
+            message.channel.send("I've been up for: " + (time/60) +" hours and " + (time%60) + "minutes.");
         console.log("I've been up for: %d minutes", time);
     }
     if(command == "check")
